@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.majorlink.lab.mapper.SupplyItemMapper">
+
+    <resultMap id="BaseResultMap" type="SupplyItem">
+        <id column="id" property="id"/>
+        <result column="category_id" property="categoryId"/>
+        <result column="name" property="name"/>
+        <result column="code" property="code"/>
+        <result column="specification" property="specification"/>
+        <result column="unit" property="unit"/>
+        <result column="manufacturer" property="manufacturer"/>
+        <result column="storage_condition" property="storageCondition"/>
+        <result column="quantity" property="quantity"/>
+        <result column="warning_quantity" property="warningQuantity"/>
+        <result column="is_hazardous" property="isHazardous"/>
+        <result column="status" property="status"/>
+        <result column="remark" property="remark"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <!-- 关联字段 -->
+        <result column="category_name" property="categoryName"/>
+    </resultMap>
+
+    <!-- 列表查询：LEFT JOIN 分类表获取分类名称，支持关键词搜索 -->
+    <select id="selectList" resultMap="BaseResultMap">
+        SELECT si.*, sc.name AS category_name
+        FROM supply_item si
+                 LEFT JOIN supply_category sc ON si.category_id = sc.id
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (si.name LIKE CONCAT('%', #{keyword}, '%')
+                  OR si.code LIKE CONCAT('%', #{keyword}, '%')
+                  OR si.manufacturer LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="categoryId != null">
+                AND si.category_id = #{categoryId}
+            </if>
+            <if test="status != null">
+                AND si.status = #{status}
+            </if>
+        </where>
+        ORDER BY si.create_time DESC
+    </select>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT si.*, sc.name AS category_name
+        FROM supply_item si
+                 LEFT JOIN supply_category sc ON si.category_id = sc.id
+        WHERE si.id = #{id}
+    </select>
+
+    <select id="selectByCode" resultMap="BaseResultMap">
+        SELECT * FROM supply_item WHERE code = #{code}
+    </select>
+
+    <!--
+        低库存预警查询：quantity <= warning_quantity
+        这是首页预警功能的核心SQL
+    -->
+    <select id="selectLowStockItems" resultMap="BaseResultMap">
+        SELECT si.*, sc.name AS category_name
+        FROM supply_item si
+                 LEFT JOIN supply_category sc ON si.category_id = sc.id
+        WHERE si.status = 1
+          AND si.quantity &lt;= si.warning_quantity
+        ORDER BY si.quantity ASC
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO supply_item
+            (category_id, name, code, specification, unit, manufacturer,
+             storage_condition, quantity, warning_quantity, is_hazardous, status, remark)
+        VALUES (#{categoryId}, #{name}, #{code}, #{specification}, #{unit}, #{manufacturer},
+                #{storageCondition}, IFNULL(#{quantity}, 0), IFNULL(#{warningQuantity}, 10),
+                IFNULL(#{isHazardous}, 0), IFNULL(#{status}, 1), #{remark})
+    </insert>
+
+    <update id="update">
+        UPDATE supply_item
+        SET category_id       = #{categoryId},
+            name              = #{name},
+            specification     = #{specification},
+            unit              = #{unit},
+            manufacturer      = #{manufacturer},
+            storage_condition = #{storageCondition},
+            warning_quantity  = #{warningQuantity},
+            is_hazardous      = #{isHazardous},
+            remark            = #{remark}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 入库：增加库存（quantity + delta） -->
+    <update id="increaseQuantity">
+        UPDATE supply_item
+        SET quantity = quantity + #{delta}
+        WHERE id = #{id}
+    </update>
+
+    <!--
+        出库：减少库存，WHERE quantity >= delta 防止超出库存
+        返回0则表示库存不足，上层Service需抛出BusinessException
+    -->
+    <update id="decreaseQuantity">
+        UPDATE supply_item
+        SET quantity = quantity - #{delta}
+        WHERE id = #{id}
+          AND quantity >= #{delta}
+    </update>
+
+    <update id="updateStatus">
+        UPDATE supply_item SET status = #{status} WHERE id = #{id}
+    </update>
+
+</mapper>

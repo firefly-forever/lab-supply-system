@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 — 实验室耗材管理系统</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .form-group { margin-bottom: 16px; }
+        .form-input  { width: 100%; }
+        .form-select { width: 100%; }
+        .login-btn   { width: 100%; margin-top: 6px; justify-content: center;
+            padding: 11px; font-size: 14px; }
+        .form-footer { text-align: center; margin-top: 14px; font-size: 13px; color: var(--text-3); }
+        .form-footer a { color: var(--primary); text-decoration: none; cursor: pointer; }
+        /* 注册额外字段 */
+        #register-extra { display: none; }
+    </style>
+</head>
+<body>
+<div class="login-page">
+
+    <!-- 左侧介绍 -->
+    <div class="login-left">
+        <div class="brand">
+            <div class="brand-icon">⚗️</div>
+            <h1>实验室耗材管理系统</h1>
+            <p>Major-Link Project · 徐州医科大学</p>
+        </div>
+        <ul class="feature-list">
+            <li>试剂耗材入库 / 出库全程追踪</li>
+            <li>学生申请 → 教师审批智能流转</li>
+            <li>低库存实时预警，杜绝断货</li>
+            <li>危险品单独标识，合规管理</li>
+        </ul>
+        <div class="deco-c1"></div>
+        <div class="deco-c2"></div>
+    </div>
+
+    <!-- 右侧表单 -->
+    <div class="login-right">
+        <div class="login-box">
+            <h2 id="form-title">欢迎登录</h2>
+            <p class="login-sub" id="form-sub">请输入您的账号和密码</p>
+
+            <!-- 登录 / 注册 切换 Tab -->
+            <div class="login-tabs">
+                <div class="login-tab active" id="tab-login"    onclick="switchTab('login')">登 录</div>
+                <div class="login-tab"        id="tab-register" onclick="switchTab('register')">注 册</div>
+            </div>
+
+            <!-- 表单 -->
+            <div class="form-group">
+                <label class="form-label">用户名</label>
+                <input class="form-input" id="username" placeholder="请输入用户名" />
+            </div>
+
+            <!-- 注册专属字段 -->
+            <div id="register-extra">
+                <div class="form-group">
+                    <label class="form-label">真实姓名</label>
+                    <input class="form-input" id="realName" placeholder="请输入真实姓名" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">角色</label>
+                    <select class="form-select" id="role">
+                        <option value="STUDENT">学生</option>
+                        <option value="TEACHER">教师</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">所在院系 / 科室</label>
+                    <input class="form-input" id="department" placeholder="如：2023级临床医学" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">密码</label>
+                <input class="form-input" id="password" type="password" placeholder="请输入密码" />
+            </div>
+
+            <button class="btn btn-primary login-btn" id="submit-btn" onclick="handleSubmit()">
+                登 录
+            </button>
+
+            <div class="form-footer">
+                <span id="footer-text">还没有账号？</span>
+                <a id="footer-link" onclick="switchTab('register')">注册账号</a>
+            </div>
+
+            <!-- 测试账号 -->
+            <div class="test-accounts" id="test-accounts">
+                <div class="test-title">🔑 测试账号（密码均为 123456）</div>
+                <div class="test-item" onclick="fillAccount('admin','管理员')">
+                    <span class="tag tag-danger">管理员</span>
+                    <span>admin</span><em>· 全部权限</em>
+                </div>
+                <div class="test-item" onclick="fillAccount('teacher1','教师')">
+                    <span class="tag tag-warning">教师</span>
+                    <span>teacher1</span><em>· 可审批申请</em>
+                </div>
+                <div class="test-item" onclick="fillAccount('student1','学生')">
+                    <span class="tag tag-success">学生</span>
+                    <span>student1</span><em>· 可提交申请</em>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+    // 已登录则直接跳首页
+    if (Auth.isLoggedIn()) window.location.href = 'dashboard.html'
+
+    let mode = 'login'  // 'login' | 'register'
+
+    function switchTab(m) {
+        mode = m
+        document.getElementById('tab-login').classList.toggle('active', m === 'login')
+        document.getElementById('tab-register').classList.toggle('active', m === 'register')
+        document.getElementById('register-extra').style.display = m === 'register' ? 'block' : 'none'
+        document.getElementById('form-title').textContent = m === 'login' ? '欢迎登录' : '注册账号'
+        document.getElementById('form-sub').textContent   = m === 'login' ? '请输入您的账号和密码' : '填写信息，创建您的账号'
+        document.getElementById('submit-btn').textContent = m === 'login' ? '登 录' : '立即注册'
+        document.getElementById('footer-text').textContent = m === 'login' ? '还没有账号？' : '已有账号？'
+        document.getElementById('footer-link').textContent = m === 'login' ? '注册账号' : '立即登录'
+        document.getElementById('footer-link').onclick = () => switchTab(m === 'login' ? 'register' : 'login')
+        document.getElementById('test-accounts').style.display = m === 'login' ? 'block' : 'none'
+    }
+
+    function fillAccount(username) {
+        document.getElementById('username').value = username
+        document.getElementById('password').value = '123456'
+    }
+
+    async function handleSubmit() {
+        const username = document.getElementById('username').value.trim()
+        const password = document.getElementById('password').value.trim()
+        if (!username || !password) { Toast.warning('请输入用户名和密码'); return }
+
+        const btn = document.getElementById('submit-btn')
+        btn.disabled = true
+        btn.textContent = '处理中...'
+
+        try {
+            if (mode === 'login') {
+                const res = await API.login({ username, password })
+                if (!res) return
+                Auth.setToken(res.data.token)
+                Auth.setUser(res.data)
+                Toast.success(`欢迎回来，${res.data.realName}！`)
+                setTimeout(() => window.location.href = 'dashboard.html', 800)
+            } else {
+                const realName  = document.getElementById('realName').value.trim()
+                const role       = document.getElementById('role').value
+                const department = document.getElementById('department').value.trim()
+                if (!realName) { Toast.warning('请输入真实姓名'); return }
+                const res = await API.register({ username, password, realName, role, department })
+                if (!res) return
+                Toast.success('注册成功！请登录')
+                switchTab('login')
+            }
+        } finally {
+            btn.disabled = false
+            btn.textContent = mode === 'login' ? '登 录' : '立即注册'
+        }
+    }
+
+    // 回车提交
+    document.addEventListener('keydown', e => { if (e.key === 'Enter') handleSubmit() })
+</script>
+</body>
+</html>
